@@ -6,9 +6,17 @@
 #include "msgbuf.hpp"
 #include "connector.hpp"
 
-// FWD-declaration, see bottom of the page for usage
-void usage(const char* progname);
+void usage(const char* progname) {
+	std::cerr << std::endl 
+			<< "USAGE: " << progname 
+			<< "{-r <readfile>} OR {-w <writefile>}" << std::endl;
+	exit( 0 );
+}
 
+/**
+ * The archiver is a file reader/writer for archiving events from/to 
+ * the Solace event bus.
+ **/
 typedef struct archstate {
 	int count_;
 	std::ofstream wr_;
@@ -72,9 +80,3 @@ main ( int c, char** a )
 	return 0;
 }
 
-void usage(const char* progname) {
-	std::cerr << std::endl 
-			<< "USAGE: " << progname 
-			<< "{-r <readfile>} OR {-w <writefile>}" << std::endl;
-	exit( 0 );
-}
