@@ -1,3 +1,9 @@
+# This project's target executables (they have no extension)
+ioloop
+txservices
+msgarchiver/msgarchiver
+*.msgdat
+
 # Prerequisites
 *.d
 
@@ -6,6 +12,7 @@
 *.lo
 *.o
 *.obj
+*.dSYM
 
 # Precompiled Headers
 *.gch
