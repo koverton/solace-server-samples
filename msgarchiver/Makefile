@@ -14,7 +14,7 @@ CPPFLAGS= $(foreach d, $(INCDIRS), -I$d) $(foreach s, $(SYMS), -D$s) -m64 $(DEBU
 # -Woverloaded-virtual -fmessage-length=0
 LDFLAGS = $(foreach d, $(LIBDIRS), -L$d) $(foreach l, $(LIBS), -l$l)
 
-msgarchiver: msgarchiver.cpp
+msgarchiver: msgarchiver.cpp connector.cpp
 
 clean:
 	$(RM) -rf  msgarchiver msgarchiver.dSYM

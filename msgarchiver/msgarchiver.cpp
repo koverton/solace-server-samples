@@ -1,15 +1,15 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <unistd.h>
+// #include <unistd.h>
 
 #include "msgbuf.hpp"
 #include "connector.hpp"
 
 void usage(const char* progname) {
 	std::cerr << std::endl 
-			<< "USAGE: " << progname 
-			<< "{-r <readfile>} OR {-w <writefile>}" << std::endl;
+		<< "USAGE: " << progname 
+		<< "{-r <readfile>} OR {-w <writefile>}" << std::endl;
 	exit( 0 );
 }
 
@@ -18,7 +18,7 @@ void usage(const char* progname) {
  * the Solace event bus.
  **/
 typedef struct archstate {
-	int count_;
+	int        count_;
 	std::ofstream wr_;
 	std::ifstream rd_;
 } archstate;

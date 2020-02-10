@@ -10,10 +10,8 @@ int main (int c, const char** a) {
 	startwrite( fname, wrf );
 	int count = 0;
 
-	count = put( wrf, start, count );
-	count = put( wrf, start, count );
-	count = put( wrf, start, count );
-	count = put( wrf, start, count );
+	for( int i = 0; i < 4; ++i)
+		count = put( wrf, start, count );
 
 	stopwrite( wrf );
 	std::cout << "Done writing , now opening for read." << std::endl;
