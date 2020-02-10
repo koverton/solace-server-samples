@@ -38,7 +38,7 @@ attributes of each message. The structure of each file is:
 
 
 ##  WRITING: typical writer
-```
+```C
 main() {
 	archstate archiver = { 0 };
 	startwrite( fname, archiver.wr_ );
