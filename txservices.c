@@ -189,31 +189,18 @@ main ( int argc, char *argv[] )
 
 	solClient_session_create ( sprops, ctx, &sess, &sfninfo, sizeof(sfninfo) );
 	solClient_session_connect ( sess );
-    printf( "Session Connected" );
+    printf( "\tSession Connected\n" );
 
 
     /****************************************************************
-     * Create Transacted Sessions for Service Listeners with their own dispatcher threads
+     * Create Transacted Sessions for Service Listeners with their own 
+     * dispatcher threads and create Service Listener flows on each one
      ***************************************************************/
 	pi = 0;
 	txprops[pi++] = SOLCLIENT_TRANSACTEDSESSION_PROP_CREATE_MESSAGE_DISPATCHER;
 	txprops[pi++] = SOLCLIENT_PROP_ENABLE_VAL;
 	txprops[pi++] = NULL;
 
-    for(i = 0; i < svccount; i++) {
-        if ((rc = solClient_session_createTransactedSession(txprops, 
-                                                        sess,
-                                                        &(svc_txsess[i]),
-                                                        NULL)) != SOLCLIENT_OK ) {
-            on_err ( rc, "solClient_session_createTransactedSession()" );
-            solClient_cleanup();
-            exit( 1 );
-        }
-    }
-
-    /*************************************************************************
-     * Create Service Listener Flows with a message callback for request handling
-     *************************************************************************/
     /* Congigure the Flow function information */
     ffninfo.rxMsgInfo.callback_p = on_flow_msg;
     ffninfo.rxMsgInfo.user_p     = NULL;
@@ -229,12 +216,24 @@ main ( int argc, char *argv[] )
     fprops[pi++] = NULL;
 
     for(i = 0; i < svccount; i++) {
-        if ( (rc = solClient_transactedSession_createFlow ( fprops, 
-            svc_txsess[i], &(svc_flow[i]), 
-            &ffninfo, sizeof(ffninfo) ) ) != SOLCLIENT_OK ) {
-                on_err(rc, "solClient_transactedSession_createFlow() one ");
-                solClient_cleanup();
-                exit( 1 );
+        /* Create the TX-session */
+        if ((rc = solClient_session_createTransactedSession(txprops, 
+                                                        sess,
+                                                        &(svc_txsess[i]),
+                                                        NULL)) != SOLCLIENT_OK ) {
+            on_err ( rc, "solClient_session_createTransactedSession()" );
+            solClient_cleanup();
+            exit( 1 );
+        }
+        /* Bind the service listener flow on that TX-session */
+        if ((rc = solClient_transactedSession_createFlow ( fprops, 
+                                                        svc_txsess[i], 
+                                                        &(svc_flow[i]), 
+                                                        &ffninfo, 
+                                                        sizeof(ffninfo))) != SOLCLIENT_OK ) {
+            on_err(rc, "solClient_transactedSession_createFlow() one ");
+            solClient_cleanup();
+            exit( 1 );
         }
     }
 
