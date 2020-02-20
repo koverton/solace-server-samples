@@ -3,6 +3,7 @@ ioloop
 txservices
 msgarchiver/msgarchiver
 *.msgdat
+*.properties
 
 # Prerequisites
 *.d

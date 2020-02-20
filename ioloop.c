@@ -97,7 +97,7 @@ main ( int argc, char* argv[] )
 
 	/* 
 	 * Create a NULL Context, which means no Context Thread is created and the application 
-	 * is now responsible for driving the event pump.
+	 * is now responsible for driving the event loop.
 	 */
 	solClient_context_create ( NULL, &ctx_p, &cfninfo, sizeof(cfninfo) );
 
@@ -121,6 +121,7 @@ main ( int argc, char* argv[] )
 
 	solClient_session_create ( sprops, ctx_p, &sess_p, &sfninfo, sizeof(sfninfo) );
 	solClient_session_connect ( sess_p );
+	/* Wait until the connection is fully established before moving forward. */
 	while ( !sessState.connected_ ) {
 		solClient_context_processEvents( ctx_p );
 	}
@@ -132,7 +133,7 @@ main ( int argc, char* argv[] )
 	fflush ( stdout );
 	while ( sessState.count_ < 1 ) {
 		/* This blocks for up to 50ms by default; the blocking duration can be 
-		 * changed using solClient_context_processEvents( ctx_p, millisecs )
+		 * changed using solClient_context_processEventsWait( ctx_p, millisecs )
 		 * where 0 causes a hardspin */
 		solClient_context_processEvents( ctx_p );
 	}

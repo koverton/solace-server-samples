@@ -1,4 +1,5 @@
 #include "connector.hpp"
+#include "sol_props.hpp"
 #include <iostream>
 
 
@@ -10,7 +11,28 @@ on_dir_msg ( solClient_opaqueSession_pt sess, solClient_opaqueMsg_pt msg, void *
 
 void
 on_evt ( solClient_opaqueSession_pt sess, solClient_session_eventCallbackInfo_pt evt, void *user_p )
-{ }
+{ 
+	connstate* state_p = (connstate*) user_p;
+	msgcorrobj_pt corr  = (msgcorrobj_pt) evt->correlation_p;
+	if ( state_p == NULL ) std::cout << "\tWARNING: Userdata on acknowledgment event was NULL" << std::endl;
+	if ( ( evt->sessionEvent ) == SOLCLIENT_SESSION_EVENT_ACKNOWLEDGEMENT ) {
+		std::cout << "\tINFO: Acknowledgement received!" << std::endl;
+		if ( corr != NULL ) {
+			std::cout << "\ton_evt() correlation info - ID: " << corr->msgId << std::endl;
+			corr->isAcked = true;
+			corr->isAccepted = true;
+		}
+	}
+	else if ( ( evt->sessionEvent ) == SOLCLIENT_SESSION_EVENT_REJECTED_MSG_ERROR ) {
+		std::cout << "\tINFO: Acknowledgement received!" << std::endl;
+		if ( corr != NULL ) {
+			std::cout << "\ton_evt() correlation info - ID: " << corr->msgId << std::endl;
+			corr->isAcked = true;
+			corr->isAccepted = false;
+		}
+	}
+
+}
 
 void
 on_flow_evt ( solClient_opaqueFlow_pt flow, solClient_flow_eventCallbackInfo_pt evt, void *user_p )
@@ -24,7 +46,10 @@ solClient_rxMsgCallback_returnCode_t
 on_msg ( solClient_opaqueFlow_pt flow, solClient_opaqueMsg_pt msg_p, void *user_p )
 {
 	connstate* state_p = (connstate*) user_p;
-	state_p->flowcb_( flow, msg_p, state_p->flowdata_ );
+	if ( true != state_p->flowcb_( flow, msg_p, state_p->flowdata_ ) ) {
+		// TODO: Log event strongly
+		return SOLCLIENT_CALLBACK_OK; // there is no fail return code; just don't ack
+	}
 	solClient_msgId_t msgId;
 	if ( solClient_msg_getMsgId ( msg_p, &msgId ) == SOLCLIENT_OK ) {
 		solClient_flow_sendAck ( flow, msgId );
@@ -44,22 +69,14 @@ connstate init()
 }
 
 void 
-connect( connstate& state, const std::string& host, const std::string& vpn, const std::string& user, const std::string& pass) {
-	const char	 *sprops[20];
-	int			 pi = 0;
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_HOST;
-	sprops[pi++] = host.c_str();
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_VPN_NAME;
-	sprops[pi++] = vpn.c_str();
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_USERNAME;
-	sprops[pi++] = user.c_str();
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_PASSWORD;
-	sprops[pi++] = pass.c_str();
-	sprops[pi++] = NULL;
+connect( connstate& state, const std::string& propsfile ) {
+	const char** sprops = read_props( propsfile.c_str() );
 
 	solClient_session_createFuncInfo_t sfninfo = SOLCLIENT_SESSION_CREATEFUNC_INITIALIZER;
 	sfninfo.rxMsgInfo.callback_p = on_dir_msg;
+	sfninfo.rxMsgInfo.user_p = &state;
 	sfninfo.eventInfo.callback_p = on_evt;
+	sfninfo.eventInfo.user_p = &state;
 
 	solClient_session_create ( sprops, state.ctx_, &state.sess_, &sfninfo, sizeof(sfninfo) );
 	solClient_session_connect ( state.sess_ );
@@ -106,11 +123,57 @@ closequeue(connstate& state) {
 	solClient_flow_destroy ( &state.flow_ );
 }
 
+static int loop = 1;
+bool
+setcorr(connstate& state, solClient_opaqueMsg_pt msg_p) {
+	state.msgPool_p = ( msgcorrobj_pt ) malloc ( sizeof ( msgcorrobj ) );
+	/* Store the message information in message memory array. */
+	state.msgPool_p->next_p = NULL;
+	state.msgPool_p->msgId = loop++;
+	state.msgPool_p->msg_p = msg_p;
+	state.msgPool_p->isAcked = false;
+	state.msgPool_p->isAccepted = false;
+	if ( state.msgPoolTail_p != NULL )
+	    state.msgPoolTail_p->next_p = state.msgPool_p;
+	if ( state.msgPoolHead_p == NULL )
+	    state.msgPoolHead_p = state.msgPool_p;
+	state.msgPoolTail_p = state.msgPool_p;
+	/*
+	 * For correlation to take effect, it must be set on the message prior to
+	 * calling send. Note: the size parameter is ignored in the API.
+	 */
+	int rc = SOLCLIENT_OK;
+	if ( ( rc = solClient_msg_setCorrelationTagPtr ( msg_p, state.msgPool_p, sizeof (*state.msgPool_p) ) ) != SOLCLIENT_OK ) {
+		std::cerr << rc << "solClient_msg_setCorrelationTag()"  << std::endl;
+		return false;
+	}
+	return true;
+}
 
 void
 sendmsg(connstate& state, solClient_opaqueMsg_pt msg_p) {
+	solClient_msg_setDeliveryMode ( msg_p, SOLCLIENT_DELIVERY_MODE_PERSISTENT );
+	if ( !setcorr( state, msg_p ) ) {
+		std::cerr << "CRAP! setting correlation object didn't work!" << std::endl;
+	}
 	if ( solClient_session_sendMsg( state.sess_, msg_p ) != SOLCLIENT_OK ) {
 		std::cerr << "CRAP! sendMsg didn't work!" << std::endl;
+	}
+}
+
+void
+cleanmsgstore(connstate& state) {
+	while ( ( state.msgPoolHead_p != NULL ) && state.msgPoolHead_p->isAcked ) {
+		std::cout <<  "\tFreeing memory for message " << state.msgPoolHead_p->msgId 
+			<< ", Result: Acked (" << state.msgPoolHead_p->isAcked
+			<< "), Accepted (" << state.msgPoolHead_p->isAccepted
+			<< ")" << std::endl;
+		state.msgPool_p = state.msgPoolHead_p;
+		if ( ( state.msgPoolHead_p = state.msgPoolHead_p->next_p ) == NULL ) {
+			state.msgPoolTail_p = NULL;
+		}
+		solClient_msg_free ( &( state.msgPool_p->msg_p ) );
+		free ( state.msgPool_p );
 	}
 }
 

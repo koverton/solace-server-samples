@@ -15,7 +15,7 @@ CPPFLAGS= $(foreach d, $(INCDIRS), -I$d) $(foreach s, $(SYMS), -D$s) -m64 $(DEBU
 LDFLAGS = $(foreach d, $(LIBDIRS), -L$d) $(foreach l, $(LIBS), -l$l)
 
 ioloop: ioloop.c
-txservice: txservice.c
+txservices: txservices.c
 
 clean:
 	$(RM) -rf  ioloop ioloop.dSYM txservice txservice.dSYM

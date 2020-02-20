@@ -50,3 +50,19 @@ on_msg() {
 }
 ```
 
+## Example program
+
+The `msgarchiver` executable can run either as a listener archiving messages, or 
+a reader playing back messages from the archive.
+
+```bash
+    merzbow:msgarchiver koverton$ ./msgarchiver
+
+    USAGE: ./msgarchiver {connection-props-file} {-w <writefile>} OR {-r <readfile> {opt:-d destination} }
+	{connection-props-file} file with Solace session properties for connecting
+	{writefile}   : file on localdisk to which messages will be archived
+	{readfile}    : file on localdisk fromwhich messages will be read and republished
+	{destination} : alternate destination to republish messages, e.g. 'queue:myqueuename' OR 'topic:my/topic/name'
+```
+
+

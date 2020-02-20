@@ -6,7 +6,16 @@
 
 // typedef struct connstate connstate;
 
-typedef void (*on_flow_msg) ( solClient_opaqueFlow_pt, solClient_opaqueMsg_pt, void* );
+typedef bool (*on_flow_msg) ( solClient_opaqueFlow_pt, solClient_opaqueMsg_pt, void* );
+
+typedef struct msgcorrobj
+{
+	struct msgcorrobj *next_p;
+	int	     msgId;       /**< The message ID. */
+	solClient_opaqueMsg_pt msg_p; /**< The message pointer. */
+	bool	    isAcked;      /**< A flag indicating if the message has been acknowledged by the appliance (either success or rejection). */
+	bool	    isAccepted;   /**< A flag indicating if the message is accepted or rejected by the appliance when acknowledged.*/
+} msgcorrobj, *msgcorrobj_pt;     /**< A pointer to ::msgcorrobj structure of information. */
 
 typedef struct connstate 
 {
@@ -15,6 +24,9 @@ typedef struct connstate
 	solClient_opaqueFlow_pt    flow_;
 	on_flow_msg                flowcb_;
 	void*                      flowdata_;
+	msgcorrobj_pt              msgPool_p;
+	msgcorrobj_pt              msgPoolHead_p;
+	msgcorrobj_pt              msgPoolTail_p;
 } connstate;
 
 /** 
@@ -26,7 +38,7 @@ connstate init ();
  * Connect the Solace session.
  **/
 void 
-connect( connstate& state, const std::string& host, const std::string& vpn, const std::string& user, const std::string& pass);
+connect( connstate& state, const std::string& propsfile );
 
 void disconnnect(connstate& state);
 
@@ -42,5 +54,7 @@ void closequeue(connstate& state);
  * Send a message on the Solace Session stored in the connstate parameter.
  **/
 void sendmsg(connstate& state, solClient_opaqueMsg_pt msg_p);
+
+void cleanmsgstore(connstate& state);
 
 #endif // CONNECTOR_HPP
