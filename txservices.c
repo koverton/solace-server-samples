@@ -130,39 +130,39 @@ main ( int argc, char *argv[] )
     const char                            sendid[] = "Requestor";
     solClient_destination_t               destination;
 
-	solClient_context_createFuncInfo_t cfninfo = SOLCLIENT_CONTEXT_CREATEFUNC_INITIALIZER;
-	solClient_session_createFuncInfo_t sfninfo = SOLCLIENT_SESSION_CREATEFUNC_INITIALIZER;
+    solClient_context_createFuncInfo_t cfninfo = SOLCLIENT_CONTEXT_CREATEFUNC_INITIALIZER;
+    solClient_session_createFuncInfo_t sfninfo = SOLCLIENT_SESSION_CREATEFUNC_INITIALIZER;
     solClient_flow_createFuncInfo_t    ffninfo = SOLCLIENT_FLOW_CREATEFUNC_INITIALIZER;
 
-	const char *sprops[20];
-	const char *txprops[20];
-	const char *fprops[20];
-	int         svccount, i, pi = 0;
+    const char *sprops[20];
+    const char *txprops[20];
+    const char *fprops[20];
+    int         svccount, i, pi = 0;
 
-	const char *host, *vpn, *user, *pass, *qname;
+    const char *host, *vpn, *user, *pass, *qname;
 
-	if ( argc < 6 ) {
-		printf( "\tUSAGE: %s <host_port> <vpn> <username> <password> <request-queue> <#-workers>\n\n", argv[0] );
-		return -1;
-	}
+    if ( argc < 6 ) {
+        printf( "\tUSAGE: %s <host_port> <vpn> <username> <password> <request-queue> <#-workers>\n\n", argv[0] );
+        return -1;
+    }
 
-	host  = argv[1];
-	vpn   = argv[2];
-	user  = argv[3];
-	pass  = argv[4];
+    host  = argv[1];
+    vpn   = argv[2];
+    user  = argv[3];
+    pass  = argv[4];
     qname = argv[5];
     svccount= atoi( argv[6] );
 
     svc_txsess = malloc( sizeof(solClient_opaqueSession_pt) * svccount );
     svc_flow   = malloc( sizeof(solClient_opaqueFlow_pt) * svccount );
 
-	solClient_initialize ( SOLCLIENT_LOG_DEFAULT_FILTER, NULL );
-	solClient_log(SOLCLIENT_LOG_NOTICE, "Initializing..." );
+    solClient_initialize ( SOLCLIENT_LOG_DEFAULT_FILTER, NULL );
+    solClient_log(SOLCLIENT_LOG_NOTICE, "Initializing..." );
 
-	/* 
-	 * Create a NULL Context, which means no Context Thread is created and the application 
-	 * is now responsible for driving the event pump.
-	 */
+    /* 
+     * Create a NULL Context, which means no Context Thread is created and the application 
+     * is now responsible for driving the event pump.
+     */
     if ( ( rc = solClient_context_create ( SOLCLIENT_CONTEXT_PROPS_DEFAULT_WITH_CREATE_THREAD,
                                            &ctx,
                                            &cfninfo,
@@ -171,24 +171,24 @@ main ( int argc, char *argv[] )
         exit( 1 );
     }
 
-	sfninfo.rxMsgInfo.callback_p = on_sess_msg;
-	sfninfo.rxMsgInfo.user_p     = NULL;
-	sfninfo.eventInfo.callback_p = on_sess_evt;
-	sfninfo.eventInfo.user_p     = NULL;
+    sfninfo.rxMsgInfo.callback_p = on_sess_msg;
+    sfninfo.rxMsgInfo.user_p     = NULL;
+    sfninfo.eventInfo.callback_p = on_sess_evt;
+    sfninfo.eventInfo.user_p     = NULL;
 
-	pi = 0;
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_HOST;
-	sprops[pi++] = host;
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_VPN_NAME;
-	sprops[pi++] = vpn;
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_USERNAME;
-	sprops[pi++] = user;
-	sprops[pi++] = SOLCLIENT_SESSION_PROP_PASSWORD;
-	sprops[pi++] = pass;
-	sprops[pi]   = NULL;
+    pi = 0;
+    sprops[pi++] = SOLCLIENT_SESSION_PROP_HOST;
+    sprops[pi++] = host;
+    sprops[pi++] = SOLCLIENT_SESSION_PROP_VPN_NAME;
+    sprops[pi++] = vpn;
+    sprops[pi++] = SOLCLIENT_SESSION_PROP_USERNAME;
+    sprops[pi++] = user;
+    sprops[pi++] = SOLCLIENT_SESSION_PROP_PASSWORD;
+    sprops[pi++] = pass;
+    sprops[pi]   = NULL;
 
-	solClient_session_create ( sprops, ctx, &sess, &sfninfo, sizeof(sfninfo) );
-	solClient_session_connect ( sess );
+    solClient_session_create ( sprops, ctx, &sess, &sfninfo, sizeof(sfninfo) );
+    solClient_session_connect ( sess );
     printf( "\tSession Connected\n" );
 
 
@@ -196,10 +196,10 @@ main ( int argc, char *argv[] )
      * Create Transacted Sessions for Service Listeners with their own 
      * dispatcher threads and create Service Listener flows on each one
      ***************************************************************/
-	pi = 0;
-	txprops[pi++] = SOLCLIENT_TRANSACTEDSESSION_PROP_CREATE_MESSAGE_DISPATCHER;
-	txprops[pi++] = SOLCLIENT_PROP_ENABLE_VAL;
-	txprops[pi++] = NULL;
+    pi = 0;
+    txprops[pi++] = SOLCLIENT_TRANSACTEDSESSION_PROP_CREATE_MESSAGE_DISPATCHER;
+    txprops[pi++] = SOLCLIENT_PROP_ENABLE_VAL;
+    txprops[pi++] = NULL;
 
     /* Congigure the Flow function information */
     ffninfo.rxMsgInfo.callback_p = on_flow_msg;

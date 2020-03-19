@@ -16,17 +16,15 @@ on_evt ( solClient_opaqueSession_pt sess, solClient_session_eventCallbackInfo_pt
 	msgcorrobj_pt corr  = (msgcorrobj_pt) evt->correlation_p;
 	if ( state_p == NULL ) std::cout << "\tWARNING: Userdata on acknowledgment event was NULL" << std::endl;
 	if ( ( evt->sessionEvent ) == SOLCLIENT_SESSION_EVENT_ACKNOWLEDGEMENT ) {
-		std::cout << "\tINFO: Acknowledgement received!" << std::endl;
+		// std::cout << "\tINFO: Acknowledgement received!" << std::endl;
 		if ( corr != NULL ) {
-			std::cout << "\ton_evt() correlation info - ID: " << corr->msgId << std::endl;
 			corr->isAcked = true;
 			corr->isAccepted = true;
 		}
 	}
 	else if ( ( evt->sessionEvent ) == SOLCLIENT_SESSION_EVENT_REJECTED_MSG_ERROR ) {
-		std::cout << "\tINFO: Acknowledgement received!" << std::endl;
+		std::cout << "\tERR: Negative ACK received!" << std::endl;
 		if ( corr != NULL ) {
-			std::cout << "\ton_evt() correlation info - ID: " << corr->msgId << std::endl;
 			corr->isAcked = true;
 			corr->isAccepted = false;
 		}
@@ -164,10 +162,10 @@ sendmsg(connstate& state, solClient_opaqueMsg_pt msg_p) {
 void
 cleanmsgstore(connstate& state) {
 	while ( ( state.msgPoolHead_p != NULL ) && state.msgPoolHead_p->isAcked ) {
-		std::cout <<  "\tFreeing memory for message " << state.msgPoolHead_p->msgId 
-			<< ", Result: Acked (" << state.msgPoolHead_p->isAcked
-			<< "), Accepted (" << state.msgPoolHead_p->isAccepted
-			<< ")" << std::endl;
+		//std::cout <<  "\tFreeing memory for message " << state.msgPoolHead_p->msgId 
+		//	<< ", Result: Acked (" << state.msgPoolHead_p->isAcked
+		//	<< "), Accepted (" << state.msgPoolHead_p->isAccepted
+		//	<< ")" << std::endl;
 		state.msgPool_p = state.msgPoolHead_p;
 		if ( ( state.msgPoolHead_p = state.msgPoolHead_p->next_p ) == NULL ) {
 			state.msgPoolTail_p = NULL;

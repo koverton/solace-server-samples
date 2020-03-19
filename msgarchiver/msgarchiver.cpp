@@ -17,9 +17,12 @@ void
 usage(const char* progname) {
 	std::cerr << std::endl 
 		<< "USAGE: " << progname << " {connection-props-file} "
-		<< "{-w <writefile>} OR {-r <readfile> {opt:-d destination} }" << std::endl
+		<< "{-w <writefile>} {-s source} OR {-r <readfile> {opt:-d destination} }" << std::endl << std::endl
 		<< "\t{connection-props-file} file with Solace session properties for connecting" << std::endl
+		<< "\t--" << std::endl
 		<< "\t{writefile}   : file on localdisk to which messages will be archived" << std::endl
+		<< "\t{source     } : source of consumed messages, e.g. 'queue:myqueuename' OR 'topic:my/topic/name'" << std::endl
+		<< "\t--" << std::endl
 		<< "\t{readfile}    : file on localdisk fromwhich messages will be read and republished" << std::endl
 		<< "\t{destination} : alternate destination to republish messages, e.g. 'queue:myqueuename' OR 'topic:my/topic/name'" << std::endl
 		<< std::endl;
@@ -125,20 +128,40 @@ main ( int c, char** a )
 				solClient_msg_setDestination( msg_p, &dest, sizeof(dest) );
 			}
 			// Replublish the message
-			solClient_msg_dump ( msg_p, NULL, 0 );
+			//solClient_msg_dump ( msg_p, NULL, 0 );
 			sendmsg( conn, msg_p );
 			cleanmsgstore( conn );
 		}
 	}
 	// Write to archive as we consume from a queue
 	else if( flag == "-w" || flag == "-W" ) {
+		// set any alternate destination when chosen
+		solClient_destination_t source = { SOLCLIENT_NULL_DESTINATION , NULL };
+		std::string srcname;
+		if ( c > 4 ) {
+			std::cerr << "Setting source: " << a[5] << std::endl;
+			srcname = parsedest( a[5] );
+			source.destType = parsedesttype( a[5] );
+			source.dest     = srcname.c_str();
+			std::cout << "SRC: " << source.dest << " TYPE: " << source.destType << std::endl;
+			if ( source.destType != SOLCLIENT_QUEUE_DESTINATION ) {
+				std::cerr << "SORRY! Source must be a queue; cannot yet consume from topics." << std::endl;
+				exit( 0 );
+			}
+		}
+		else {
+			std::cerr << "Source.dest: " << (NULL == source.dest ? "(null)":source.dest) << std::endl;
+		}
 		// Open the archive for writing
 		startwrite( fname, archiver.wr_ );
 		// Open the queue for consumption; the callback `on_queue_msg` 
 		// will archive each message upon arrival
-		openqueue( conn, "archive", on_queue_msg, &archiver );
+		openqueue( conn, source.dest, on_queue_msg, &archiver );
 		// Nothing else to do, so give the app thread back to the scheduler
-		while( true ) sleep( 10 );
+		while( true ) { 
+			sleep( 5 );
+			std::cerr << " ... written " << archiver.count_ << " ... " << std::endl;
+		}
 	}
 	// Help message
 	else {
