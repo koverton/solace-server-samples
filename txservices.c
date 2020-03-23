@@ -262,8 +262,6 @@ main ( int argc, char *argv[] )
     if ( ( rc = solClient_cleanup (  ) ) != SOLCLIENT_OK ) {
         on_err ( rc, "solClient_cleanup()" );
     }
-    goto notInitialized;
 
-  notInitialized:
     return 0;
 }  
