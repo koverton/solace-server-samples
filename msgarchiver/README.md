@@ -2,26 +2,14 @@
 
 An example program reading messages from Solace and writing them to disk.
 
-The same program can read the files from disk and republish them to Solace.
-
-TBD: Add ability to modify replay destination to support queue-to-queue copies.
+The same program can read the files from disk and republish them to Solace, either to their original destinations or to a configured destination.
 
 ## File Format
 
 A message log is a binary log of serialized Solace messages including all 
 attributes of each message. The structure of each file is:
 
-``` 
- [ integer: number of records in the file ]
- [ record1: 
- 		[integer: size of the serialized message data]
- 		[binary buffer of serialized message data]
- ]
- [ record2: [int] [binary data] ]
- ...
- [ recordn: [int] [binary data] ]
-```
-
+![file structure](msgarchiver.png)
 
 ##  READING: typical reader replays from a file
 ```C
@@ -56,7 +44,7 @@ The `msgarchiver` executable can run either as a listener archiving messages, or
 a reader playing back messages from the archive.
 
 ```bash
-    merzbow:msgarchiver koverton$ ./msgarchiver
+merzbow:msgarchiver koverton$ ./msgarchiver
 
 USAGE: ./msgarchiver {connection-props-file} {-w <writefile> -s source} OR {-r <readfile> {opt:-d destination} }
 
@@ -69,4 +57,31 @@ USAGE: ./msgarchiver {connection-props-file} {-w <writefile> -s source} OR {-r <
 	{destination} : alternate destination to republish messages, e.g. 'queue:myqueuename' OR 'topic:my/topic/name'
 ```
 
+### Writing Mode
+
+In this mode, the msgarchiver listens to the Solace PubSub+ event broker for events on any configured destination queue and appends them to an archive file for later use:
+
+```shell
+./msgarchiver docker.properties -w mynhlarchive.dat -s 'queue:nhl/game/415'
+Setting source: queue:nhl/game/415
+SRC: nhl/game/415 TYPE: 1
+ ... written 0 ...
+ ... written 22617 ...
+ ... written 105051 ...
+ ... written 192329 ...
+ ... written 275651 ...
+ ... written 370890 ...
+ ... written 413818 ...
+ ...
+```
+
+### Reading Mode
+
+In this mode, the msgarchiver reads from an archive file and republishes to a Solace PubSub+ event broker. This can be used to republish events to different destinations, or move events from one broker to another (or both).
+
+```bash
+./msgarchiver docker.properties -r mynhlarchive.dat -d queue:nhl/game/415
+writing messages tnhl/game/415 ...
+...
+```
 
